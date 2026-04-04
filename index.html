@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Student Marks Predictor</title>
+        <style>
+            body {
+                margin: 0;
+                font-family: Arial, sans-serif;
+                background: linear-gradient(to right, #9be15d, #00e3ae);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+            }
+
+            .container {
+                background: white;
+                width: 400px;
+                padding: 30px;
+                border-radius: 20px;
+                box-shadow: 0px 8px 20px rba(0, 0, 0, 0.2);
+                text-align: center;
+            }
+
+            h1 {
+                margin-bottom: 20px;
+                color: #333;
+            }
+
+            p {
+                color: #555;
+                margin-bottom: 20px;
+            }
+
+            input {
+                width: 90%;
+                padding: 12px;
+                margin: 15px 0;
+                border: 1px solid #ccc;
+                border-radius: 10px;
+                font-size: 16px;
+            }
+
+            button {
+                padding: 12px 25px;
+                background: #6cc070;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+
+            button:hover {
+                background: #58a85c;
+            }
+
+            #result {
+                margin-top: 20px;
+                font-size: 28px;
+                font-weight: bold;
+                color: #777;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Student Marks Predictor</h1>
+            <p>Enter study hours to predict marks:</p>
+
+            <input type="number" id="hours" placeholder="Enter study hours" step="any">
+            <br>
+            <button id="predict-btn" onclick="predictMarks()">Predict</button>
+            <h2 id="result">Result will appear here</h2>
+            <p class="footer">Built by teja</p>
+        </div>
+
+        <script>
+            async function predictMarks() {
+                let resultBox = document.getElementById("result");
+                let btn = document.getElementById("predict-btn");
+
+                let hours = parseFloat(document.getElementById("hours").value);
+
+                if (isNaN(hours)) {
+                    resultBox.style.color = "red";
+                    resultBox.innerText = "Please enter study hours";
+                    return;
+                }
+
+                resultBox.style.color = "black";
+                resultBox.innerText = "Predicting...";
+                btn.disabled = true;
+                btn.innerText = "Predicting...";
+
+                try {
+                    const API_URL = "http://127.0.0.1:8000/predict";
+                    let response = await fetch(API_URL, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            hours: hours
+                        })
+                        
+                    });
+
+                    let data = await response.json();
+                    resultBox.style.color = "green";
+                    resultBox.innerText = "Predicted Marks: " + data.predicted_marks;
+
+                    document.getElementById("hours").value = "";
+
+                    btn.disabled = false;
+                    btn.innerText = "Predict";
+                } 
+                catch (error) {
+                    console.log("Error:", error);
+                    resultBox.style.color = "red";
+                    resultBox.innerText = "Server not running";
+                    btn.disabled = false;
+                    btn.innerText = "Predict";
+                }
+            }
+        </script>
+    </body>
+</html>
