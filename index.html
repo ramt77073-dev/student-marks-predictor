@@ -94,7 +94,7 @@
                 btn.innerText = "Predicting...";
 
                 try {
-                    const API_URL = "http://127.0.0.1:8000/predict";
+                    const API_URL = "https://student-marks-predictor-4ecf.onrender.com/predict";
                     let response = await fetch(API_URL, {
                         method: "POST",
                         headers: {
