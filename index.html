@@ -1,126 +1,247 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Student Marks Predictor</title>
         <style>
+            * {
+                box-sizing: border-box;
+            }
+
             body {
                 margin: 0;
                 font-family: Arial, sans-serif;
-                background: linear-gradient(to right, #9be15d, #00e3ae);
+                background: linear-gradient(135deg, #8fdc6f, #42d392);
+                min-height: 100vh;
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                min-height: 100vh;
+                padding: 20px;
             }
 
             .container {
-                background: white;
-                width: 400px;
-                padding: 30px;
-                border-radius: 20px;
-                box-shadow: 0px 8px 20px rba(0, 0, 0, 0.2);
+                width: 100%;
+                max-width: 500px;
+                background: rgba(255, 255, 255, 0.96);
+                border-radius: 24px;
+                padding: 40px 30px;
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
                 text-align: center;
+                animation: fadeIn 0.7s ease;
             }
 
             h1 {
+                margin-top: 0;
+                margin-bottom: 12px;
+                font-size: 42px;
+                color: #1f2937;
+            }
+
+            .subtitle {
+                font-size: 18px;
+                color: #6b7280;
+                margin-bottom: 30px;
+            }
+
+            .input-box {
+                width: 100%;
+                padding: 16px;
+                font-size: 18px;
+                border: 2px solid #d1d5db;
+                border-radius: 14px;
+                outline: none;
+                transition: 0.3s;
                 margin-bottom: 20px;
-                color: #333;
+
             }
 
-            p {
-                color: #555;
-                margin-bottom: 20px;
+            .input-box:focus {
+                border-color: #22c55e;
+                box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
             }
 
-            input {
-                width: 90%;
-                padding: 12px;
-                margin: 15px 0;
-                border: 1px solid #ccc;
-                border-radius: 10px;
-                font-size: 16px;
-            }
-
-            button {
-                padding: 12px 25px;
-                background: #6cc070;
+            .predict-btn {
+                background-color: linear-gradient(135deg, #22c55e, #15803d);
                 color: white;
                 border: none;
-                border-radius: 10px;
-                font-size: 16px;
+                padding: 14px 28px;
+                font-size: 18px;
+                font-weight: bold;
+                border-radius: 14px;
                 cursor: pointer;
+                transition: 0.3s;
+            }
+            .predict-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(21, 128, 61, 0.25);
+            }
+            .predict-btn:disabled {
+                opacity: 0.7;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
             }
 
-            button:hover {
-                background: #58a85c;
+            .result-card {
+                margin-top: 28px;
+                background: #f9fafb;
+                border-radius: 18px;
+                padding: 22px;
+            }
+
+            .result-title {
+                color: #6b7280;
+                font-size: 16px;
+                margin-bottom: 8px;
             }
 
             #result {
-                margin-top: 20px;
-                font-size: 28px;
+                margin: 0;
+                font-size: 38px;
                 font-weight: bold;
-                color: #777;
+                color: #111827;
             }
+
+            .note {
+                margin-top: 20px;
+                font-size: 14px;
+                color: #6b7280;
+            }
+
+
+            .footer {
+                margin-top: 24px;
+                color: #4b5563;
+                font-size: 15px;
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
         </style>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body>
         <div class="container">
-            <h1>Student Marks Predictor</h1>
-            <p>Enter study hours to predict marks:</p>
+            <h1>Marks Predictor</h1>
+            <p class="subtitle">Enter study hours to predict student marks instantly.</p>
 
-            <input type="number" id="hours" placeholder="Enter study hours" step="any">
-            <br>
-            <button id="predict-btn" onclick="predictMarks()">Predict</button>
-            <h2 id="result">Result will appear here</h2>
+            <input
+            type="number"
+            id="hours"
+            class="input-box"
+            placeholder="Enter study hours"
+            step="any"
+            >
+
+            <button id="predict-btn" class="predict-btn" onclick="predictMarks()">Predict Marks</button>
+
+            <div class="result-card">
+                <div class="result-title">Predicted Marks:</div>
+                <p id="result">Waiting...</p>
+            </div>
+
+            <canvas id="myChart"></canvas>
+
+            <p class="note">Recommended input range: 0 to 10 hours</p>
             <p class="footer">Built by teja</p>
         </div>
 
         <script>
             async function predictMarks() {
-                let resultBox = document.getElementById("result");
+                let hours = parseFloat(document.getElementById('hours').value);
+                let result = document.getElementById("result");
                 let btn = document.getElementById("predict-btn");
 
-                let hours = parseFloat(document.getElementById("hours").value);
-
                 if (isNaN(hours)) {
-                    resultBox.style.color = "red";
-                    resultBox.innerText = "Please enter study hours";
+                    result.style.color = "red";
+                    result.innerText = "Enter hours between 0 and 10";
                     return;
                 }
 
-                resultBox.style.color = "black";
-                resultBox.innerText = "Predicting...";
+                result.style.color = "#111827";
+                result.innerText = "Predicting...";
                 btn.disabled = true;
                 btn.innerText = "Predicting...";
 
                 try {
                     const API_URL = "https://student-marks-predictor-4ecf.onrender.com/predict";
+
                     let response = await fetch(API_URL, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
                         },
-                        body: JSON.stringify({
-                            hours: hours
-                        })
-                        
+                        body: JSON.stringify({ hours: hours })
                     });
 
-                    let data = await response.json();
-                    resultBox.style.color = "green";
-                    resultBox.innerText = "Predicted Marks: " + data.predicted_marks;
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
 
+                    const data = await response.json();
+                    result.style.color = "#15803d";
+                    result.innerText = "Marks: " + data.predicted_marks.toFixed(2);
+
+                    updateChart(hours, data.predicted_marks);
                     document.getElementById("hours").value = "";
 
+                    
+
+                } catch (error) {
+                    console.error("Error fetching prediction:", error);
+                    result.style.color = "red";
+                    result.innerText = "Server error";
+                } finally {
                     btn.disabled = false;
-                    btn.innerText = "Predict";
-                } 
-                catch (error) {
-                    console.log("Error:", error);
-                    resultBox.style.color = "red";
-                    resultBox.innerText = "Server not running";
-                    btn.disabled = false;
-                    btn.innerText = "Predict";
+                    btn.innerText = "Predict Marks";
+                }
+
+                let chart;
+
+                function updateChart(hours, marks) {
+                    const ctx = document.getElementById('myChart').getContext('2d');
+                    if (chart) {
+                        chart.destroy();
+                    }
+
+                    chart = new Chart(ctx, {
+                        type: "line",
+                        data: {
+                            labels: [0, hours],
+                            datasets: [{
+                                label: "Marks Prediction",
+                                data: [0, marks],
+                                borderColor: "#22c55e",
+                                backgroundColor: "rgba(34,197,94,0.2)",
+                                fill: true,
+                                tension: 0.4,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                lengend: {
+                                    display: true
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    });
                 }
             }
         </script>
