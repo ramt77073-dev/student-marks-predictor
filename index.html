@@ -62,7 +62,7 @@
             }
 
             .predict-btn {
-                background-color: linear-gradient(135deg, #22c55e, #15803d);
+                background: linear-gradient(135deg, #22c55e, #15803d);
                 color: white;
                 border: none;
                 padding: 14px 28px;
@@ -116,6 +116,21 @@
                 font-size: 15px;
             }
 
+            #historyList {
+                margin-top: 20px;
+                padding: 0;
+                list-style: none;
+            }
+
+            #historyList li {
+                background: #f3f4f6;
+                margin: 8px 0;
+                padding: 10px;
+                border-radius: 10px;
+                font-size: 16px;
+                color: #111827;
+            }
+
             @keyframes fadeIn {
                 from {
                     opacity: 0;
@@ -128,6 +143,7 @@
             }
 
         </style>
+        
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
@@ -153,17 +169,65 @@
 
             <canvas id="myChart"></canvas>
 
+            <h3 class="history-title">Prediction History</h3>
+            <ul id="historyList"></ul>
+            <button onclick="clearHistory()" class="predict-btn" style="margin-top: 10px; background: #ef4444;">Clear History</button>  
+
             <p class="note">Recommended input range: 0 to 10 hours</p>
             <p class="footer">Built by teja</p>
         </div>
 
         <script>
+            let chart;
+            let historyData = [];
+
+            function updateChart(hours, marks) {
+                const ctx = document.getElementById('myChart').getContext('2d');
+                if (chart) {
+                    chart.destroy();
+                }
+
+                chart = new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: [0, hours],
+                        datasets: [{
+                            label: "Marks Prediction",
+                            data: [0, marks],
+                            borderColor: "#22c55e",
+                            backgroundColor: "rgba(34,197,94,0.2)",
+                            fill: true,
+                            tension: 0.4,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
             async function predictMarks() {
                 let hours = parseFloat(document.getElementById('hours').value);
                 let result = document.getElementById("result");
                 let btn = document.getElementById("predict-btn");
 
                 if (isNaN(hours)) {
+                    result.style.color = "red";
+                    result.innerText = "Enter hours between 0 and 10";
+                    return;
+                }
+
+                if (hours < 0 || hours > 10) {
                     result.style.color = "red";
                     result.innerText = "Enter hours between 0 and 10";
                     return;
@@ -190,13 +254,16 @@
                     }
 
                     const data = await response.json();
-                    result.style.color = "#15803d";
-                    result.innerText = "Marks: " + data.predicted_marks.toFixed(2);
 
-                    updateChart(hours, data.predicted_marks);
-                    document.getElementById("hours").value = "";
-
+                    let marks = Number(data.predicted_marks).toFixed(2);
                     
+                    result.style.color = "#15803d";
+                    result.innerText = "Marks: " + marks;
+                    updateChart(hours, Number(marks));
+
+                    historyData.push({ hours: hours, marks: marks });
+                    updateHistory();
+                    document.getElementById("hours").value = "";
 
                 } catch (error) {
                     console.error("Error fetching prediction:", error);
@@ -206,43 +273,23 @@
                     btn.disabled = false;
                     btn.innerText = "Predict Marks";
                 }
+            }
 
-                let chart;
+            function updateHistory() {
+                const historyList = document.getElementById("historyList");
+                historyList.innerHTML = "";
 
-                function updateChart(hours, marks) {
-                    const ctx = document.getElementById('myChart').getContext('2d');
-                    if (chart) {
-                        chart.destroy();
-                    }
-
-                    chart = new Chart(ctx, {
-                        type: "line",
-                        data: {
-                            labels: [0, hours],
-                            datasets: [{
-                                label: "Marks Prediction",
-                                data: [0, marks],
-                                borderColor: "#22c55e",
-                                backgroundColor: "rgba(34,197,94,0.2)",
-                                fill: true,
-                                tension: 0.4,
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            plugins: {
-                                lengend: {
-                                    display: true
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    });
+                for (let i = historyData.length - 1; i >= 0; i--) {
+                    let item = document.createElement("li");
+                    item.innerText = `${historyData[i].hours} hrs -> ${historyData[i].marks} marks`;
+                    historyList.appendChild(item);
                 }
+            }
+
+            function clearHistory() {
+                historyData = [];
+                localStorage.removeItem("history");
+                updateHistory();
             }
         </script>
     </body>
