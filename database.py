@@ -3,10 +3,14 @@ from pymongo import MongoClient
 
 MONGO_URL =  os.getenv("MONGO_URL")
 
-client = MongoClient(MONGO_URL)
+try:
+    client = MongoClient(MONGO_URL)
+    db = client['student_predictor']
 
-db = client["marks_app"]
+    users_collection = db["users"]
+    predictions_collection = db["predictions"]
 
+    print("MongoDB connected")
 
-users_collection = db["users"] 
-predictions_collection = db["predictions"]
+except Exception as e:
+    print(f"Error connecting to MongoDB: {e}")
