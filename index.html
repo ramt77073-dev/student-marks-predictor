@@ -350,6 +350,10 @@
                 const username = document.querySelector("#username").value.trim();
                 const password = document.querySelector("#password").value.trim();
 
+                alert("username = " + username);
+                alert("password length = " + password.length);
+                console.log("password value:", password);
+
                 if (!username || !password) {
                     alert("Enter username and password");
                     return;
