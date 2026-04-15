@@ -1,29 +1,24 @@
-## Live Demo
-frontend: (we will add tomorrow)
-API: https://Student-marks-predictor-4ecf.onrender.com/docs
-
-# Student Marks Predictor
-
-This project predicts student marks based on study hours using Machine Learning.
-
-## Tech Stack
-- Python
-- FastAPI
-- Scikit-learn
-- HTML, CSS, JavaScript
-- Render (Deployment)
+# Marks Predictor App
 
 ## Features
-- Predict marks using ML model
-- API built with FastAPI
-- Frontend UI for user input
-- Live deployment
+- User Login (JWT authentication)
+- Predict marks using study hours
+- Graph visualization using Chart.js
+- Prediction history tracking
+- Logout system
 
-## Live API
-https://Student-marks-predictor-4ecf.onrender.com/docs
+## Tech Used
+- Frontend: HTML, CSS, JavaScript
+- Backend: FastAPI (Python)
+- ML Model: Linear Regression
+- Storage: JSON / Database
 
-## How it works
-1. User enters stuy hours
-2. Data sent to API
-3. Model Predicts marks
-4. Result displayed on screeen
+## What I Learned
+- API integration (fetch)
+- Authentication using tokens
+- Frontend + Backend connection
+- Debugging real errors
+- Data visualization
+
+## Author
+Teja

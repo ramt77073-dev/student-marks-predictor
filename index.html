@@ -103,6 +103,7 @@
                 color: #111827;
             }
 
+
             .note {
                 margin-top: 20px;
                 font-size: 14px;
@@ -143,6 +144,8 @@
             }
 
         </style>
+
+        
         
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -152,15 +155,20 @@
             <h1>Marks Predictor</h1>
             <p class="subtitle">Enter study hours to predict student marks instantly.</p>
 
-            <input
-            type="number"
-            id="hours"
-            class="input-box"
-            placeholder="Enter study hours"
-            step="any"
-            >
+            <p id="welcome" style="display:none; font-weight:bold;"></p>
 
-            <button id="predict-btn" class="predict-btn" onclick="predictMarks()">Predict Marks</button>
+            <div id="loginSection">
+                <h3>Login</h3>
+                <input type="text" id="username" class="input-box" placeholder="Username">
+                <input type="password" id="password" class="input-box" placeholder="Password">
+                <button onClick="loginUser()" class="predict-btn">Login</button>
+            </div>
+           
+            <div id="appSection" style="display:none;">
+                <input type="number" id="hours" class="input-box" placeholder="Enter study hours" step="any">
+                <button id="predict-btn" class="predict-btn" onclick="predictMarks()">Predict Marks</button>
+                <button onclick="logout()" class="predict-btn">Logout</button>
+            </div>
 
             <div class="result-card">
                 <div class="result-title">Predicted Marks:</div>
@@ -171,17 +179,19 @@
 
             <h3 class="history-title">Prediction History</h3>
             <ul id="historyList"></ul>
-            <button onclick="clearHistory()" class="predict-btn" style="margin-top: 10px; background: #ef4444;">Clear History</button>  
+            <button onclick="clearHistory()" class="predict-btn" style="margin-top: 10px; background: #ef4444;">Clear History</button>
+
+            <p id="message" style="color: red; text-align:center;"></p>
 
             <p class="note">Recommended input range: 0 to 10 hours</p>
             <p class="footer">Built by teja</p>
+
         </div>
 
         <script>
             let chart;
-            let historyData = [];
 
-            function updateChart(hours, marks) {
+            async function updateChart(hours, marks) {
                 const ctx = document.getElementById('myChart').getContext('2d');
                 if (chart) {
                     chart.destroy();
@@ -217,8 +227,15 @@
             }
 
             async function predictMarks() {
+                const token = localStorage.getItem("token")
+                if (!token) {
+                    alert("Please login first");
+                    return;
+                }
+
+                const message = document.getElementById("message");
                 let hours = parseFloat(document.getElementById('hours').value);
-                let result = document.getElementById("result");
+                const result = document.getElementById("result");
                 let btn = document.getElementById("predict-btn");
 
                 if (isNaN(hours)) {
@@ -233,20 +250,28 @@
                     return;
                 }
 
+                
+                const username = localStorage.getItem("username");
+
+                message.innerText = "";
                 result.style.color = "#111827";
                 result.innerText = "Predicting...";
                 btn.disabled = true;
                 btn.innerText = "Predicting...";
 
+
                 try {
-                    const API_URL = "https://student-marks-predictor-4ecf.onrender.com/predict";
+                    const API_URL = "http://127.0.0.1:8001/predict";
 
                     let response = await fetch(API_URL, {
                         method: "POST",
                         headers: {
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + token
                         },
-                        body: JSON.stringify({ hours: hours })
+                        body: JSON.stringify({
+                            hours: hours
+                         })
                     });
 
                     if (!response.ok) {
@@ -255,42 +280,156 @@
 
                     const data = await response.json();
 
+                    if (data.error) {
+                        message.innerText = data.error;
+                        return;
+                    } else {
+                        message.innerText = "";
+                    }
+
                     let marks = Number(data.predicted_marks).toFixed(2);
                     
                     result.style.color = "#15803d";
                     result.innerText = "Marks: " + marks;
                     updateChart(hours, Number(marks));
 
-                    historyData.push({ hours: hours, marks: marks });
-                    updateHistory();
+                    loadHistory();
+
+                    
                     document.getElementById("hours").value = "";
 
                 } catch (error) {
                     console.error("Error fetching prediction:", error);
                     result.style.color = "red";
                     result.innerText = "Server error";
+                    message.innerText = "Real error:" +error.message;
                 } finally {
                     btn.disabled = false;
                     btn.innerText = "Predict Marks";
                 }
             }
 
-            function updateHistory() {
-                const historyList = document.getElementById("historyList");
-                historyList.innerHTML = "";
+            async function loginUser() {
+                const username = document.getElementById("username").value;
+                const password = document.getElementById("password").value;
 
-                for (let i = historyData.length - 1; i >= 0; i--) {
-                    let item = document.createElement("li");
-                    item.innerText = `${historyData[i].hours} hrs -> ${historyData[i].marks} marks`;
-                    historyList.appendChild(item);
+                const res = await fetch("http://127.0.0.1:8001/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.access_token) {
+                    localStorage.setItem("token", data.access_token);
+                    localStorage.setItem("username", username);
+
+                    document.getElementById("loginSection").style.display = "none";
+                    document.getElementById("appSection").style.display = "block";
+
+                    document.getElementById("welcome").style.display = "block";
+                    document.getElementById("welcome").innerText = "Welcome " + username;
+
+                    loadHistory();
+
+                    alert("Login successful!");
+                } else {
+                    alert(data.error || "Login failed");
                 }
             }
 
-            function clearHistory() {
-                historyData = [];
-                localStorage.removeItem("history");
-                updateHistory();
+            async function loadHistory() {
+                try {
+                    const username = localStorage.getItem("username");
+                    const token = localStorage.getItem("token");
+
+                    if (!username || !token) {
+                        return;
+                    }
+                    
+
+                    const res = await fetch(`http://127.0.0.1:8001/history/${username}`, {
+                        method: "GET",
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    });
+                    const data = await res.json();
+
+                    const historyList = document.getElementById("historyList");
+                    historyList.innerHTML = "";
+
+                    data.history.forEach(item => {
+                        let li = document.createElement("li");
+                        li.innerText = `${item.hours} hrs -> ${item.predicted_marks} marks`;
+                        historyList.appendChild(li);
+                    });
+                } catch (err) {
+                    console.log("error loading history:", err);
+                }
             }
+
+            async function clearHistory() {
+                try {
+                    const username = localStorage.getItem("username");
+                    const token = localStorage.getItem("token");
+
+                    if (!username || !token) {
+                        alert("Please login first");
+                        return;
+                    }
+
+                    const res = await fetch(`http://127.0.0.1:8001/history/${username}`, {
+                        method: "DELETE",
+                        headers: {
+                            "Authorization": "Bearer " + token
+                        }
+                    });
+
+                    if (res.ok) {
+                        alert("History cleared");
+                        loadHistory(); // Reload to show empty list
+                    } else {
+                        alert("Failed to clear history");
+                    }
+                } catch (err) {
+                    console.log("error clearing history:", err);
+                    alert("Error clearing history");
+                }
+            }
+
+            function logout() {
+                localStorage.removeItem("token");
+                localStorage.removeItem("username");
+
+                document.getElementById("loginSection").style.display = "block";
+                document.getElementById("appSection").style.display = "none";
+
+                document.getElementById("welcome").style.display = "none";
+
+                alert("Logged out");
+            }
+
+            window.onload = function () {
+                const token = localStorage.getItem("token");
+                const username = localStorage.getItem("username");
+
+                if (token) {
+
+                    document.getElementById("loginSection").style.display = "none";
+                    document.getElementById("appSection").style.display = "block";
+
+                    document.getElementById("welcome").style.display = "block";
+                    document.getElementById("welcome").innerText = "Welcome, " + username;
+                    loadHistory();
+                }
+            };
         </script>
     </body>
 </html>

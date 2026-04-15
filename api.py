@@ -1,15 +1,24 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import joblib
 import pandas as pd
 from database import users_collection, predictions_collection
 from passlib.context import CryptContext
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
-from pydantic import BaseModel
+from pathlib import Path
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
+
+BASE_DIR = Path(__file__).resolve().parent
+
+static_dir = BASE_DIR / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,87 +28,159 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model = joblib.load("marks_model.joblib")
-
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Load model with absolute path
+model_path = Path(__file__).resolve().parent / "marks_model.joblib"
+model = joblib.load(model_path)
 
-class StudentInput(BaseModel):
-    hours: float
+SECRET_KEY = "RAMTEJA123"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
+security = HTTPBearer()
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow()  + timedelta(minutes=15)
+
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+        return username
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate token"
+        )
 
 class User(BaseModel):
     username: str
     password: str
 
+class StudentInput(BaseModel):
+    hours: float
 
 @app.get("/")
 def home():
-    return {"message": "Student Marks Predictor API is running"}
-
-
-@app.get("/about")
-def about():
-    return {"message": "This API predicts student marks based on study hours"}
-
+    return {"message": "API running"}
 
 @app.post("/signup")
 def signup(user: User):
     try:
-        username = user.username.strip()
-        password = user.password.strip()
-
-        if len(password.encode("utf-8")) > 72:
-            return {"error": "Password too long. Keep it under 72 bytes."}
-
-        existing_user = users_collection.find_one({"username": username})
+        existing_user = users_collection.find_one({"username": user.username})
 
         if existing_user:
             return {"error": "User already exists"}
-
-        hashed_password = pwd_context.hash(password)
+        
+        
+        hashed_password = pwd_context.hash(user.password)
 
         users_collection.insert_one({
-            "username": username,
+            "username": user.username,
             "password": hashed_password
         })
 
-        return {"message": "User created successfully"}
-
+        return {"message": "Signup successful"}
+    
     except Exception as e:
         return {"error": str(e)}
     
 @app.post("/login")
 def login(user: User):
     try:
-        username = user.username.strip()
-        password = user.password.strip()
+        users = list(users_collection.find({"username": user.username}))
 
-        found_user = users_collection.find_one({"username": username})
+        found_user = users[-1] if users else None
 
         if not found_user:
             return {"error": "User not found"}
+        
+        stored_password = found_user["password"]
 
-        if not pwd_context.verify(password, found_user["password"]):
+        if not str(stored_password).startswith("$2"):
+            return {"error": "Old user record found. PLeade signup again"}
+        
+        if not pwd_context.verify(user.password, found_user["password"]):
             return {"error": "Invalid password"}
+        
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username},
+            expires_delta=access_token_expires
+        )
+        
+        return {
+            "message": "Login successful",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "username": user.username
+        }
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.post("/predict")
+def predict(data: StudentInput, current_user: str = Depends(get_current_user)):
+    try:
+        hours = data.hours
+        prediction = model.predict(pd.DataFrame({"hours": [hours]}))
+        predicted_marks = round(float(prediction[0]), 2)
 
-        return {"message": "Login successful"}
-
+        predictions_collection.insert_one({
+            "username": current_user,
+            "hours": hours,
+            "predicted_marks": predicted_marks
+        })
+        
+        return {
+            "study_hours": hours,
+            "predicted_marks": predicted_marks
+        }
+    
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.get("/history/{username}")
+def get_history(username: str, current_user: str = Depends(get_current_user)):
+    try:
+        if username != current_user:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        
+        data = list(predictions_collection.find(
+            {"username": username},
+            {"_id": 0}
+        ))
+        return {"history": data}
     except Exception as e:
         return {"error": str(e)}
 
-
-@app.post("/predict")
-def predict(data: StudentInput):
-    hours = data.hours
-
-    prediction = model.predict(pd.DataFrame({"hours": [hours]}))
-    predicted_marks = round(float(prediction[0]), 2)
-
-    return {
-        "study_hours": hours,
-        "predicted_marks": predicted_marks
-    }
+@app.delete("/history/{username}")
+def clear_history(username: str, current_user: str = Depends(get_current_user)):
+    try:
+        if username != current_user:
+            raise HTTPException(status_code=403, detail="Not authorized")
+        
+        predictions_collection.delete_many({"username": username})
+        return {"message": "History cleared"}
+    except Exception as e:
+        return {"error": str(e)}
+    
+    @app.get("/", include_in_schema=False)
+    def serve_frontend():
+        return FileResponse(BASE_DIR / "index.html")
