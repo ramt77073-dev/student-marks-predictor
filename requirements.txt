@@ -1,8 +1,7 @@
 fastapi
 uvicorn
-scikit-learn
-joblib
-pandas
-passlib[bcrypt]
-python-jose
 pymongo
+python-jose
+passlib[bcrypt]
+pandas
+joblib
