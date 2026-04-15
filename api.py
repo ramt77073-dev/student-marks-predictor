@@ -77,9 +77,9 @@ class User(BaseModel):
 class StudentInput(BaseModel):
     hours: float
 
-@app.get("/")
-def home():
-    return {"message": "API running"}
+@app.get("/", include_in_schema=False)
+def serve_frontend():
+    return FileResponse(BASE_DIR / "index.html")
 
 @app.post("/signup")
 def signup(user: User):
@@ -181,6 +181,3 @@ def clear_history(username: str, current_user: str = Depends(get_current_user)):
     except Exception as e:
         return {"error": str(e)}
     
-@app.get("/", include_in_schema=False)
-def serve_frontend():
-    return FileResponse(BASE_DIR / "index.html")
