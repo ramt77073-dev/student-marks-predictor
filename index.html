@@ -162,7 +162,7 @@
                 <input type="text" id="username" class="input-box" placeholder="Username">
                 <input type="password" id="password" class="input-box" placeholder="Password">
                 <button onClick="loginUser()" class="predict-btn">Login</button>
-                <button onclick="signup()">Signup</button>
+                <button onclick="signup()" class="predict-btn">Signup</button>
             </div>
            
             <div id="appSection" style="display:none;">
@@ -345,20 +345,33 @@
                 }
             }
 
+        
             async function signup() {
-                const username = document.querySelector("#username").value;
-                const password = document.querySelector("#password").value;
+                const username = document.querySelector("#username").value.trim();
+                const password = document.querySelector("#password").value.trim();
 
-                const res = await fetch("/signup", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ username, password })
-                });
+                if (!username || !password) {
+                    alert("Enter username and password");
+                    return;
+                }
 
-                const data = await res.json();
-                alert(data.message || data.error)
+                try {
+                    const res = await fetch("/signup", {
+                        method: "POST",
+                        headers: {
+                            "content-type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            password: password
+                        })
+                    });
+                    const data = await res.json();
+                    alert(data.message || data.error || "Signup failed");
+                } catch (error) {
+                    console.error("Signup error:", error);
+                    alert("Signup request failed");
+                }
                 
             }
 
