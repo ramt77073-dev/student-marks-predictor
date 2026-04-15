@@ -181,6 +181,6 @@ def clear_history(username: str, current_user: str = Depends(get_current_user)):
     except Exception as e:
         return {"error": str(e)}
     
-    @app.get("/", include_in_schema=False)
-    def serve_frontend():
-        return FileResponse(BASE_DIR / "index.html")
+@app.get("/", include_in_schema=False)
+def serve_frontend():
+    return FileResponse(BASE_DIR / "index.html")
