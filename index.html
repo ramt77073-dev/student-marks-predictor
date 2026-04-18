@@ -181,7 +181,7 @@
             <h3 class="history-title">Prediction History</h3>
             <button onclick="clearHistory()" class="predict-btn" style="margin-top: 10px; background: #ef4444;">Clear History</button>
             
-            <ul id="history"></ul>
+            <ul id="historyList"></ul>
 
             <p id="message" style="color: red; text-align:center;"></p>
 
@@ -397,6 +397,7 @@
                         }
                     });
                     const data = await res.json();
+                    console.log(data);
                     showHistory(data);
                 } catch (err) {
                     console.log("error loading history:", err);
@@ -428,7 +429,7 @@
             }
 
             function showHistory(data) {
-                const list = document.getElementById("history");
+                const list = document.getElementById("historyList");
                 list.innerHTML = "";
 
                 data.foreach(item => {
