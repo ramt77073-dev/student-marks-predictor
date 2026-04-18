@@ -396,6 +396,11 @@
                             "Authorization": "Bearer " + token
                         }
                     });
+
+                    if (!res.ok) {
+                        console.log("History fetch failed:", res.status);
+                        return
+                    }
                     const data = await res.json();
                     console.log("history response =", data);
 
