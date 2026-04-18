@@ -179,9 +179,9 @@
             <canvas id="myChart"></canvas>
 
             <h3 class="history-title">Prediction History</h3>
-            <ul id="historyList"></ul>
-            <button onclick="clearHistory()" class="predict-btn" style="margin-top: 10px; background: #ef4444;">Clear History</button>
             
+            <button onclick="clearHistory()" class="predict-btn" style="margin-top: 10px; background: #ef4444;">Clear History</button>
+            <ul id="historyList"></ul>
 
             <p id="message" style="color: red; text-align:center;"></p>
 
@@ -458,7 +458,7 @@
 
                 data.foreach(item => {
                     const li = document.createElement("li");
-                    li.textCsontent = `Hours: ${item.hours} -> Marks: ${item.predicted_marks}`;
+                    li.textContent = `Hours: ${item.hours} -> Marks: ${item.predicted_marks}`;
                     list.appendChild(li);
                 });
             }
