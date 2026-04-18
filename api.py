@@ -167,7 +167,7 @@ def get_history(username: str, current_user: str = Depends(get_current_user)):
             {"username": username},
             {"_id": 0}
         ))
-        return data
+        return {"history": data}
     except Exception as e:
         return {"error": str(e)}
 

@@ -406,10 +406,10 @@
 
                     let historyData = [];
 
-                    if (!Array.isArray(data)) {
-                        historyData = data;
-                    } else if (data.history) {
+                    if (data.history && Array.isArray(data.history)) {
                         historyData = data.history;
+                    } else if (Array.isArray(data)) {
+                        historyData = data;
                     } else {
                         console.log("Unexpected format");
                         return;
