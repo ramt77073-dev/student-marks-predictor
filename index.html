@@ -148,7 +148,7 @@
         
         
 
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js" integrity="sha384-aZK2rErbvPY+OfJQVLYnCNq+KhuP4iVvTbvrjO+3Z6q40+KaCP6SvLEWAqUAH2Pe" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body>
         <div class="container">
@@ -456,7 +456,7 @@
                     return;
                 }
 
-                data.foreach(item => {
+                data.forEach(item => {
                     const li = document.createElement("li");
                     li.textContent = `Hours: ${item.hours} -> Marks: ${item.predicted_marks}`;
                     list.appendChild(li);
