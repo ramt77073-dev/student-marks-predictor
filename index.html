@@ -181,7 +181,7 @@
             <h3 class="history-title">Prediction History</h3>
             <button onclick="clearHistory()" class="predict-btn" style="margin-top: 10px; background: #ef4444;">Clear History</button>
             
-            <ul id="historyList"></ul>
+            <ul id="history"></ul>
 
             <p id="message" style="color: red; text-align:center;"></p>
 
@@ -386,13 +386,14 @@
                     const token = localStorage.getItem("token");
 
                     if (!username || !token) {
+                        console.log("NO user or token found")
                         return;
                     }
 
                     const res = await fetch(`/history/${username}`, {
                         method: "GET",
                         headers: {
-                            "Authorization": "Bearer" + token
+                            "Authorization": "Bearer " + token
                         }
                     });
                     const data = await res.json();
@@ -407,11 +408,6 @@
                     const username = localStorage.getItem("username");
                     const token = localStorage.getItem("token");
 
-                    if (!username || !token) {
-                        alert("Please login first");
-                        return;
-                    }
-
                     const res = await fetch(`/history/${username}`, {
                         method: "DELETE",
                         headers: {
@@ -421,7 +417,7 @@
 
                     if (res.ok) {
                         alert("History cleared");
-                        loadHistory(); // Reload to show empty list
+                        loadHistory();
                     } else {
                         alert("Failed to clear history");
                     }
@@ -431,8 +427,8 @@
                 }
             }
 
-            function showHiistory(data) {
-                const list = document.getElementById("historyList`");
+            function showHistory(data) {
+                const list = document.getElementById("history`");
                 list.innerHTML = "";
 
                 data.foreach(item => {
