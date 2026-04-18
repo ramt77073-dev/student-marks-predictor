@@ -179,8 +179,10 @@
             <canvas id="myChart"></canvas>
 
             <h3 class="history-title">Prediction History</h3>
-            <ul id="historyList"></ul>
             <button onclick="clearHistory()" class="predict-btn" style="margin-top: 10px; background: #ef4444;">Clear History</button>
+            
+            <h3>prediction History</h3>
+            <ul id="historyList"></ul>
 
             <p id="message" style="color: red; text-align:center;"></p>
 
@@ -382,34 +384,25 @@
             async function loadHistory() {
                 try {
                     const username = localStorage.getItem("username");
-                    const token = localStorage.getItem("token");
+                    const token = localStorage.getItem("token");\
 
                     if (!username || !token) {
                         return;
                     }
-                    
 
-                    const res = await fetch(`http://127.0.0.1:8001/history/${username}`, {
+                    const res = await fetch(`/history/${username}`, {
                         method: "GET",
                         headers: {
-                            "Authorization": "Bearer " + token
+                            "Authorization": "Bearer" + token
                         }
                     });
                     const data = await res.json();
-
-                    const historyList = document.getElementById("historyList");
-                    historyList.innerHTML = "";
-
-                    data.history.forEach(item => {
-                        let li = document.createElement("li");
-                        li.innerText = `${item.hours} hrs -> ${item.predicted_marks} marks`;
-                        historyList.appendChild(li);
-                    });
+                    showHistory(data);
                 } catch (err) {
                     console.log("error loading history:", err);
+
                 }
             }
-
             async function clearHistory() {
                 try {
                     const username = localStorage.getItem("username");
@@ -437,6 +430,17 @@
                     console.log("error clearing history:", err);
                     alert("Error clearing history");
                 }
+            }
+
+            function showHiistory(data) {
+                const list = document.getElementById("historyList`");
+                list.innerHTML = "";
+
+                data.foreach(item => {
+                    const li = document.createElement("li");
+                    li.textcontent = `Hours: ${item.hours} -> Marks: ${item.predicted_marks}`;
+                    list.appendChild(li);
+                });
             }
 
             function logout() {

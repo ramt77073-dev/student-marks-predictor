@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from datetime import datetime
 
 app = FastAPI()
 
@@ -166,7 +167,7 @@ def get_history(username: str, current_user: str = Depends(get_current_user)):
             {"username": username},
             {"_id": 0}
         ))
-        return {"history": data}
+        return data
     except Exception as e:
         return {"error": str(e)}
 
