@@ -397,7 +397,12 @@
                         }
                     });
                     const data = await res.json();
-                    console.log(data);
+                    console.log("history response =", data);
+
+                    if (!Array.isArray(data)) {
+                        console.log("History is not an array");
+                        return;
+                    }
                     showHistory(data);
                 } catch (err) {
                     console.log("error loading history:", err);
@@ -431,6 +436,13 @@
             function showHistory(data) {
                 const list = document.getElementById("historyList");
                 list.innerHTML = "";
+
+                if (data.length === 0) {
+                    const li = document.createElementById("historyList");
+                    li.textContent = "No history found";
+                    list.appendChild(li);
+                    return;
+                }
 
                 data.foreach(item => {
                     const li = document.createElement("li");
