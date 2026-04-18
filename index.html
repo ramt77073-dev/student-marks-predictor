@@ -415,6 +415,7 @@
 
                 }
             }
+
             async function clearHistory() {
                 try {
                     const username = localStorage.getItem("username");
@@ -444,7 +445,7 @@
                 list.innerHTML = "";
 
                 if (data.length === 0) {
-                    const li = document.createElementById("historyList");
+                    const li = document.createElementById("li");
                     li.textContent = "No history found";
                     list.appendChild(li);
                     return;
@@ -483,6 +484,7 @@
                     loadHistory();
                 }
             };
+
         </script>
     </body>
 </html>
