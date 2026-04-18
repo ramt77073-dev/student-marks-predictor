@@ -399,11 +399,17 @@
                     const data = await res.json();
                     console.log("history response =", data);
 
+                    let historyData = [];
+
                     if (!Array.isArray(data)) {
-                        console.log("History is not an array");
+                        historyData = data;
+                    } else if (data.history) {
+                        historyData = data.history;
+                    } else {
+                        console.log("Unexpected format");
                         return;
                     }
-                    showHistory(data);
+                    showHistory(historyData);
                 } catch (err) {
                     console.log("error loading history:", err);
 
