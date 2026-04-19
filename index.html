@@ -115,23 +115,38 @@
                 margin-top: 24px;
                 color: #4b5563;
                 font-size: 15px;
-            }
-
+        }
+            
             #historyList {
-                margin-top: 20px;
                 padding: 0;
+                margin-top: 15px;
+            }
+
+            #historyList li {
                 list-style: none;
             }
 
-            #historyList ul{
-                list-style: none;
-                background: #f8f8f8;
+            .history-card {
+                display: flex;
+                justify-content: space-between;
+                background: #ffffff;
                 margin: 10px 0;
-                pading: 12px;
-                border-radius: 10px;
+                padding: 14px 18px;
+                border-radius: 12px;
                 font-weight: 600;
-                box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                border-left: 5px solid #4CAF50;
             }
+
+            .history-card .hours {
+                color: #555;
+            }
+
+            .history-card .marks {
+                color: #2e7d32;
+                font-weight: bold;
+            }
+
 
             @keyframes fadeIn {
                 from {
@@ -448,7 +463,14 @@
 
             function showHistory(data) {
                 const list = document.getElementById("historyList");
-                list.innerHTML = "";
+                list.innerHTML = `
+                <div class="history-card">
+                    <span class="hours"> ${item.hours} hrs</span>
+                    <span class="marks"> ${item.predicted_marks}</span>
+                    </div>
+                    `;
+
+                    list.appendChild(li);
 
                 if (data.length === 0) {
                     const li = document.createElement("li");
