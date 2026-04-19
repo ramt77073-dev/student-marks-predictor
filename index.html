@@ -462,30 +462,30 @@
             }
 
             function showHistory(data) {
-                const list = document.getElementById("historyList");
+                const list = documentById("historyList");
                 list.innerHTML = "";
-
-                    list.appendChild(li);
 
                 if (data.length === 0) {
                     const li = document.createElement("li");
                     li.textContent = "No history found";
-                    list.appendChild(li);
+                    li.appendChild(li);
                     return;
                 }
 
-                const reversedData = [...data].reverse();
+                const reversedData = [...data].reverse(); 
 
-                reversedData.forEach(item => {
+                reversedData.foreach(item => {
                     const li = document.createElement("li");
 
                     li.innerHTML = `
                     <div class="history-card">
                         <span class="hours"> ${item.hours} hrs</span>
-                        <span class="marks"> ${item.predicted_marks}</span>
+                        <span class="marks"> ${item.predicted_marks} </span>
                     </div>
-                `;
-                })
+                    `;
+                });
+            }
+       
 
             function logout() {
                 localStorage.removeItem("token");
