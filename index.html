@@ -463,40 +463,31 @@
 
             function showHistory(data) {
                 const list = document.getElementById("historyList");
-                list.innerHTML = `
-                <div class="history-card">
-                    <span class="hours"> ${item.hours} hrs</span>
-                    <span class="marks"> ${item.predicted_marks}</span>
-                    </div>
-                    `;
+                list.innerHTML = "";
 
                     list.appendChild(li);
 
                 if (data.length === 0) {
                     const li = document.createElement("li");
                     li.textContent = "No history found";
-                    li.style.listStyle = "none";
-                    li.style.textAlign = "center";
-                    li.style.color = "gray";
-                    li.style.marginTop = "10px";
                     list.appendChild(li);
                     return;
                 }
 
-                const reverseData = [...data].reverse();
+                const reversedData = [...data].reverse();
 
-                reverseData.forEach(item => {
+                reversedData.forEach(item => {
                     const li = document.createElement("li");
-                    li.textContent = `Hours: ${item.hours} -> Marks: ${item.predicted_marks}`;
-                    li.style.listStyle = "none";
-                    li.style.background = "#f8f8f8";
-                    li.style.margin = "8px 0";
-                    li.style.padding = "10px";
-                    li.style.borderRadius = "8px";
-                    li.style.fontWeight = "bold";
-                    li.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
-                    list.appendChild(li);
-                });
+
+                    li innerHTML = `
+                    <div class="history-card">
+                        <span class="hours"> ${item.hours} hrs</span>
+                        <span class="marks"> #{item.predicted_marks}></sapn>
+                    </div>
+                    `;
+
+                    list.appendChild(li)
+                })
             }
 
             function logout() {
