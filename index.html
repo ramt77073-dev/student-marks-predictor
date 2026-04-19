@@ -479,15 +479,12 @@
                 reversedData.forEach(item => {
                     const li = document.createElement("li");
 
-                    li innerHTML = `
+                    li.innerHTML = `
                     <div class="history-card">
                         <span class="hours"> ${item.hours} hrs</span>
-                        <span class="marks"> #{item.predicted_marks}></sapn>
+                        <span class="marks"> ${item.predicted_marks}</span>
                     </div>
-                    `;
-
-                    list.appendChild(li)
-                })
+                `;
             }
 
             function logout() {
