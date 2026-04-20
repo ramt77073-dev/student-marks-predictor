@@ -99,10 +99,12 @@ def serve_frontend():
 @app.post("/signup")
 def signup(user: User):
     try:
+        if len(user.password.encode("utf-8")) > 72:
+            raise HTTPException(status_code=400, detail="Password too long")
         existing_user = users_collection.find_one({"username": user.username})
 
         if existing_user:
-            return {"error": "User already exists"}
+            raise HTTPException(status_code=400, detail="Username already exists")
         
         
         hashed_password = pwd_context.hash(user.password)
@@ -120,37 +122,38 @@ def signup(user: User):
 @app.post("/login")
 def login(user: User):
     try:
-        users = list(users_collection.find({"username": user.username}))
-
-        found_user = users[-1] if users else None
+        if len(user.password.encode("utf-8")) > 72:
+            raise HTTPException(status_code=400, detail="Password too long")
+        
+        found_user = users_collection.find_one({"username": user.username})
 
         if not found_user:
-            return {"error": "User not found"}
+            raise HTTPException(status_code=400, detail="User not found")
         
-        stored_password = found_user["password"]
+        if not pwd_context.verify(user.password, found_user["password"]):
+            raise HTTPException(status_code=400, detail="Incorrect password")
+        
+        access_token = create_access_token(data={"sub": user.username})
 
-        if not str(stored_password).startswith("$2"):
-            return {"error": "Old user record found. Please signup again"}
-        
-        # Truncate password to 72 bytes for bcrypt
-        password_bytes = user.password.encode('utf-8')[:72]
-        if not pwd_context.verify(password_bytes, found_user["password"]):
-            return {"error": "Invalid password"}
-        
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": user.username},
-            expires_delta=access_token_expires
-        )
-        
         return {
+
             "message": "Login successful",
+
             "access_token": access_token,
+
             "token_type": "bearer",
+
             "username": user.username
+
         }
+
+    except HTTPException:
+
+        raise
+
     except Exception as e:
-        return {"error": str(e)}
+
+        raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/predict")
 def predict(data: StudentInput, current_user: str = Depends(get_current_user)):
