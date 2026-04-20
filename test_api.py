@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, Field
 from passlib.context import CryptContext
 from jose import jwt
 from jose.exceptions import JWTError
@@ -13,7 +13,17 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class User(BaseModel):
     username: str
-    password: str
+    password: str = Field(..., max_length=200)
+    
+    @field_validator('password', mode='before')
+    @classmethod
+    def truncate_password(cls, v):
+        if not v:
+            return v
+        if isinstance(v, str):
+            password_bytes = v.encode('utf-8')[:72]
+            return password_bytes.decode('utf-8', errors='ignore')
+        return v
 
 @app.get("/")
 def home():
