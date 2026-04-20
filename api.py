@@ -155,6 +155,7 @@ def login(user: User):
     except Exception as e:
         print("LOGIN ERROR:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/signup")
 def signup(user: User):
     try:
@@ -177,8 +178,8 @@ def signup(user: User):
         raise
     except Exception as e:
         print("SIGNUP ERROR:", str(e))
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-
     
 @app.post("/predict")
 def predict(data: StudentInput, current_user: str = Depends(get_current_user)):
