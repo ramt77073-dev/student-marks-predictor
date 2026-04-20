@@ -7,12 +7,12 @@ import pandas as pd
 from database import users_collection, predictions_collection
 from passlib.context import CryptContext
 from jose import jwt, JWTError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from datetime import datetime
 from fastapi.security import OAuth2PasswordBearer
+import os
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -30,7 +30,7 @@ app.add_middleware(
 BASE_DIR = Path(__file__).resolve().parent
 model = joblib.load(BASE_DIR / "marks_model.joblib")
 
-SECRET_KEY = "RAMTEJA123"
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -48,7 +48,7 @@ class StudentInput(BaseModel):
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_MINUTES))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -59,7 +59,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     )
 
     try:
-        payload = jwt.decode(token, SECRET_KRY, algorithms=[ALGORITHMS])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
         if username is None:
             raise credentials_exception
@@ -84,8 +84,9 @@ def signup(user: User):
         if existing_user:
             return {"error": "User already exists"}
         
-        
-        hashed_password = pwd_context.hash(user.password)
+        # Truncate password to 72 bytes for bcrypt
+        password_bytes = user.password.encode('utf-8')[:72]
+        hashed_password = pwd_context.hash(password_bytes.decode('utf-8', errors='ignore'))
 
         users_collection.insert_one({
             "username": user.username,
@@ -110,7 +111,7 @@ def login(user: User):
         stored_password = found_user["password"]
 
         if not str(stored_password).startswith("$2"):
-            return {"error": "Old user record found. PLeade signup again"}
+            return {"error": "Old user record found. Please signup again"}
         
         if not pwd_context.verify(user.password, found_user["password"]):
             return {"error": "Invalid password"}
