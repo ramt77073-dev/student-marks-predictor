@@ -14,6 +14,9 @@ from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from fastapi.security import OAuth2PasswordBearer
 
+import warnings
+warnings.filterwarnings("ignore")
+
 app = FastAPI()
 
 app.add_middleware(
