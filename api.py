@@ -70,6 +70,11 @@ def serve_frontend():
 
 @app.post("/signup")
 def signup(user: User):
+
+    print("USERNAME =", user.username)
+    print("PASSWORD =", user.password)
+    print("PASSWORD LENGTH =", len(user.password))
+    print("PASSWORD TYPE =", type(user.password))
     try:
         existing_user = users_collection.find_one({"username": user.username})
 
