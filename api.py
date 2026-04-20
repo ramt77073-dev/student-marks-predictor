@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 import joblib
 import pandas as pd
 from database import users_collection, predictions_collection
@@ -41,14 +41,18 @@ security = HTTPBearer()
 
 class User(BaseModel):
     username: str
-    password: str
+    password: str = Field(..., max_length=200)
     
-    @field_validator('password')
+    @field_validator('password', mode='before')
     @classmethod
     def truncate_password(cls, v):
+        if not v:
+            return v
         # Truncate to 72 bytes for bcrypt compatibility
-        password_bytes = v.encode('utf-8')[:72]
-        return password_bytes.decode('utf-8', errors='ignore')
+        if isinstance(v, str):
+            password_bytes = v.encode('utf-8')[:72]
+            return password_bytes.decode('utf-8', errors='ignore')
+        return v
 
 class StudentInput(BaseModel):
     hours: float
