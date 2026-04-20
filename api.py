@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, field_validator, Field
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel
 import joblib
 import pandas as pd
 from database import users_collection, predictions_collection
@@ -10,8 +10,6 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.security import OAuth2PasswordBearer
 import os
 
 import warnings
@@ -34,10 +32,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__max_rounds=12, bcrypt__ident="2b")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
-
-security = HTTPBearer()
 
 class User(BaseModel):
     username: str
