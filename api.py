@@ -151,7 +151,7 @@ def signup(user: User):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-    @app.post("/login")
+@app.post("/login")
 def login(user: User):
     try:
         password = user.password[:72]   # 🔥 SAME HERE
