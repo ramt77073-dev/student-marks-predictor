@@ -97,17 +97,23 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 def serve_frontend():
     return FileResponse(BASE_DIR / "index.html")
 
+
 @app.post("/signup")
 def signup(user: User):
     try:
-        existing_user = users_collection.find_one({"username": user.username})
+        print("SIGNUP HIT")
+        print("USERNAME:", repr(user.username))
+        print("PASSWORD:", repr(user.password))
+        print("PASSWORD LENGTH:", len(user.password))
 
+        existing_user = users_collection.find_one({"username": user.username})
         if existing_user:
-            return {"error": "User already exists"}
+            raise HTTPException(status_code=400, detail="User already exists")
         
-        # Truncate password to 72 bytes for bcrypt
-        password_bytes = user.password.encode('utf-8')[:72]
-        hashed_password = pwd_context.hash(password_bytes)
+        password = user.password[:72]
+
+        hashed_password = pwd_context.hash(password)
+        print("HASH CREATED")
 
         users_collection.insert_one({
             "username": user.username,
@@ -115,41 +121,52 @@ def signup(user: User):
         })
 
         return {"message": "Signup successful"}
-    
+
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Signup error: {e}")
-        return {"error": str(e)}
-    
+        print("SIGNUP ERROR:", str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/login")
 def login(user: User):
     try:
+        print("LOGIN HIT")
+        print("USERNAME:", repr(user.username))
+        print("PASSWORD:", repr(user.password))
+        print("PASSWORD LENGTH:", len(user.password))
+
         found_user = users_collection.find_one({"username": user.username})
+        print("FOUND USER:", found_user)
 
         if not found_user:
-            return {"error": "User not found"}
+            raise HTTPException(status_code=404, detail="User not found")
         
-        # Truncate password to 72 bytes for bcrypt
-        password_bytes = user.password.encode('utf-8')[:72]
-        
-        if not pwd_context.verify(password_bytes, found_user["password"]):
-            return {"error": "Invalid password"}
-        
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": user.username},
-            expires_delta=access_token_expires
-        )
-        
+        password = user.password[:72]
+
+        ok = pwd_context.verify(password, found_user["password"])
+        print("VERIFY RESULT:", ok)
+
+        if not ok:
+            raise HTTPException(status_code=401, detail="Incorrect password")
+
+        access_token = create_access_token(data={"sub": user.username})
+
         return {
             "message": "Login successful",
             "access_token": access_token,
             "token_type": "bearer",
             "username": user.username
         }
+
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Login error: {e}")
-        return {"error": str(e)}
+        print("LOGIN ERROR:", str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
     
 @app.post("/predict")
 def predict(data: StudentInput, current_user: str = Depends(get_current_user)):
