@@ -113,7 +113,11 @@ def login(user: User):
         if not str(stored_password).startswith("$2"):
             return {"error": "Old user record found. Please signup again"}
         
-        if not pwd_context.verify(user.password, found_user["password"]):
+        # Truncate password to 72 bytes for bcrypt
+        password_bytes = user.password.encode('utf-8')[:72]
+        password_to_verify = password_bytes.decode('utf-8', errors='ignore')
+        
+        if not pwd_context.verify(password_to_verify, found_user["password"]):
             return {"error": "Invalid password"}
         
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
