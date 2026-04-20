@@ -7,15 +7,19 @@ from sklearn.linear_model import LinearRegression
 from database import users_collection, predictions_collection
 from passlib.context import CryptContext
 from jose import jwt, JWTError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordBearer
 import traceback
+import os
+from dotenv import load_dotenv
 
 import warnings
 warnings.filterwarnings("ignore")
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -54,7 +58,9 @@ except Exception as e:
     except Exception as save_error:
         print(f"Could not save model: {save_error}")
 
-SECRET_KEY = "RAMTEJA123"
+import os
+
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -70,7 +76,7 @@ class StudentInput(BaseModel):
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
