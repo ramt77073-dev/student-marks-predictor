@@ -86,10 +86,8 @@ def signup(user: User):
         if existing_user:
             return {"error": "User already exists"}
         
-        # Truncate password to 72 bytes (not characters) for bcrypt
-        password_bytes = user.password.encode('utf-8')[:72]
-        password_truncated = password_bytes.decode('utf-8', errors='ignore')
-        hashed_password = pwd_context.hash(password_truncated)
+        # Password already truncated by Pydantic validator
+        hashed_password = pwd_context.hash(user.password)
 
         users_collection.insert_one({
             "username": user.username,
@@ -117,11 +115,8 @@ def login(user: User):
         if not str(stored_password).startswith("$2"):
             return {"error": "Old user record found. Please signup again"}
         
-        # Truncate password to 72 bytes (not characters) for bcrypt
-        password_bytes = user.password.encode('utf-8')[:72]
-        password_truncated = password_bytes.decode('utf-8', errors='ignore')
-        
-        if not pwd_context.verify(password_truncated, found_user["password"]):
+        # Password already truncated by Pydantic validator
+        if not pwd_context.verify(user.password, found_user["password"]):
             return {"error": "Invalid password"}
         
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
