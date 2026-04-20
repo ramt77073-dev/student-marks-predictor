@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import joblib
 import pandas as pd
@@ -12,7 +11,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from datetime import datetime
 from fastapi.security import OAuth2PasswordBearer
 import traceback
 
@@ -63,8 +61,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-security = HTTPBearer()
-
 class User(BaseModel):
     username: str
     password: str
@@ -101,19 +97,13 @@ def serve_frontend():
 @app.post("/signup")
 def signup(user: User):
     try:
-        print("SIGNUP HIT")
-        print("USERNAME:", repr(user.username))
-        print("PASSWORD:", repr(user.password))
-        print("PASSWORD LENGTH:", len(user.password))
+        password = user.password[:72]
 
         existing_user = users_collection.find_one({"username": user.username})
         if existing_user:
             raise HTTPException(status_code=400, detail="User already exists")
-        
-        password = user.password[:72]
 
         hashed_password = pwd_context.hash(password)
-        print("HASH CREATED")
 
         users_collection.insert_one({
             "username": user.username,
@@ -125,36 +115,13 @@ def signup(user: User):
     except HTTPException:
         raise
     except Exception as e:
-        print("SIGNUP ERROR:", str(e))
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/signup")
-def signup(user: User):
-    try:
-        password = user.password[:72]   # 🔥 TRUNCATE FIRST
-
-        existing_user = users_collection.find_one({"username": user.username})
-        if existing_user:
-            raise HTTPException(status_code=400, detail="User already exists")
-
-        hashed_password = pwd_context.hash(password)
-
-        users_collection.insert_one({
-            "username": user.username,
-            "password": hashed_password
-        })
-
-        return {"message": "Signup successful"}
-
-    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/login")
 def login(user: User):
     try:
-        password = user.password[:72]   # 🔥 SAME HERE
+        password = user.password[:72]
 
         found_user = users_collection.find_one({"username": user.username})
 
