@@ -41,18 +41,7 @@ security = HTTPBearer()
 
 class User(BaseModel):
     username: str
-    password: str = Field(..., max_length=200)
-    
-    @field_validator('password', mode='before')
-    @classmethod
-    def truncate_password(cls, v):
-        if not v:
-            return v
-        # Truncate to 72 bytes for bcrypt compatibility
-        if isinstance(v, str):
-            password_bytes = v.encode('utf-8')[:72]
-            return password_bytes.decode('utf-8', errors='ignore')
-        return v
+    password: str
 
 class StudentInput(BaseModel):
     hours: float
@@ -90,8 +79,13 @@ def signup(user: User):
         if existing_user:
             return {"error": "User already exists"}
         
-        # Password already truncated by Pydantic validator
-        hashed_password = pwd_context.hash(user.password)
+        # CRITICAL: Truncate password to exactly 72 bytes for bcrypt
+        pwd_bytes = user.password.encode('utf-8')
+        if len(pwd_bytes) > 72:
+            pwd_bytes = pwd_bytes[:72]
+        safe_password = pwd_bytes.decode('utf-8', errors='ignore')
+        
+        hashed_password = pwd_context.hash(safe_password)
 
         users_collection.insert_one({
             "username": user.username,
@@ -119,8 +113,13 @@ def login(user: User):
         if not str(stored_password).startswith("$2"):
             return {"error": "Old user record found. Please signup again"}
         
-        # Password already truncated by Pydantic validator
-        if not pwd_context.verify(user.password, found_user["password"]):
+        # CRITICAL: Truncate password to exactly 72 bytes for bcrypt
+        pwd_bytes = user.password.encode('utf-8')
+        if len(pwd_bytes) > 72:
+            pwd_bytes = pwd_bytes[:72]
+        safe_password = pwd_bytes.decode('utf-8', errors='ignore')
+        
+        if not pwd_context.verify(safe_password, found_user["password"]):
             return {"error": "Invalid password"}
         
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
