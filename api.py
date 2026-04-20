@@ -14,7 +14,6 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from fastapi.security import OAuth2PasswordBearer
-import traceback
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -100,19 +99,14 @@ def serve_frontend():
 @app.post("/signup")
 def signup(user: User):
     try:
-        print("SIGNUP HIT")
-        print("USERNAME:", repr(user.username))
-        print("PASSWORD:", repr(user.password))
-        print("PASSWORD LENGTH:", len(user.password))
-
         existing_user = users_collection.find_one({"username": user.username})
 
         if existing_user:
-            raise HTTPException(status_code=400, detail="Username already exists")
+            return {"error": "User already exists"}
         
-        
-        hashed_password = pwd_context.hash(user.password)
-        print("HASH CREATED")
+        # Truncate password to 72 bytes for bcrypt
+        password_bytes = user.password.encode('utf-8')[:72]
+        hashed_password = pwd_context.hash(password_bytes)
 
         users_collection.insert_one({
             "username": user.username,
@@ -121,57 +115,40 @@ def signup(user: User):
 
         return {"message": "Signup successful"}
     
-    except HTTPException:
-        raise
-    
     except Exception as e:
-        print("LOGIN ERROR:", str(e))
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Signup error: {e}")
+        return {"error": str(e)}
     
     
 @app.post("/login")
 def login(user: User):
     try:
-
-        print("LOGIN HIT")
-        print("USERNAME:", repr(user.username))
-        print("PASSWORD:", repr(user.password))
-        print("PASSWORD LENGTH:", len(user.password.encode("utf-8")))
-        
         found_user = users_collection.find_one({"username": user.username})
-        print("FOUND USER:", found_user)
 
         if not found_user:
-            raise HTTPException(status_code=401, detail="User not found")
+            return {"error": "User not found"}
         
-        ok = pwd_context.verify(user.password, found_user["password"])
-        print("PASSWORD VERIFY RESULT:", ok)
+        # Truncate password to 72 bytes for bcrypt
+        password_bytes = user.password.encode('utf-8')[:72]
         
-        if not pwd_context.verify(user.password, found_user["password"]):
-            raise HTTPException(status_code=401, detail="Incorrect password")
+        if not pwd_context.verify(password_bytes, found_user["password"]):
+            return {"error": "Invalid password"}
         
-        access_token = create_access_token(data={"sub": user.username})
-
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username},
+            expires_delta=access_token_expires
+        )
+        
         return {
-
             "message": "Login successful",
-
             "access_token": access_token,
-
             "token_type": "bearer",
-
             "username": user.username
-
         }
-
-    except HTTPException:
-        raise
-
     except Exception as e:
-        print("LOGIN ERROR:", str(e))
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Login error: {e}")
+        return {"error": str(e)}
     
 @app.post("/predict")
 def predict(data: StudentInput, current_user: str = Depends(get_current_user)):
