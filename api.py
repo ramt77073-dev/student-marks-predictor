@@ -128,10 +128,10 @@ def login(user: User):
         found_user = users_collection.find_one({"username": user.username})
 
         if not found_user:
-            raise HTTPException(status_code=400, detail="User not found")
+            raise HTTPException(status_code=401, detail="User not found")
         
         if not pwd_context.verify(user.password, found_user["password"]):
-            raise HTTPException(status_code=400, detail="Incorrect password")
+            raise HTTPException(status_code=401, detail="Incorrect password")
         
         access_token = create_access_token(data={"sub": user.username})
 
