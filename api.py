@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from fastapi.security import OAuth2PasswordBearer
+import traceback
 
 import warnings
 warnings.filterwarnings("ignore")
