@@ -132,23 +132,13 @@ def signup(user: User):
 @app.post("/login")
 def login(user: User):
     try:
-        print("LOGIN HIT")
-        print("USERNAME:", repr(user.username))
-        print("PASSWORD:", repr(user.password))
-        print("PASSWORD LENGTH:", len(user.password))
-
-        found_user = users_collection.find_one({"username": user.username})
-        print("FOUND USER:", found_user)
-
-        if not found_user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
         password = user.password[:72]
 
-        ok = pwd_context.verify(password, found_user["password"])
-        print("VERIFY RESULT:", ok)
+        found_user = users_collection.find_one({"username": user.username})
+        if not found_user:
+            raise HTTPException(status_code=404, detail="User not found")
 
-        if not ok:
+        if not pwd_context.verify(password, found_user["password"]):
             raise HTTPException(status_code=401, detail="Incorrect password")
 
         access_token = create_access_token(data={"sub": user.username})
@@ -164,9 +154,31 @@ def login(user: User):
         raise
     except Exception as e:
         print("LOGIN ERROR:", str(e))
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    
+@app.post("/signup")
+def signup(user: User):
+    try:
+        password = user.password[:72]
+
+        existing_user = users_collection.find_one({"username": user.username})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="User already exists")
+
+        hashed_password = pwd_context.hash(password)
+
+        users_collection.insert_one({
+            "username": user.username,
+            "password": hashed_password
+        })
+
+        return {"message": "Signup successful"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("SIGNUP ERROR:", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
     
 @app.post("/predict")
 def predict(data: StudentInput, current_user: str = Depends(get_current_user)):
