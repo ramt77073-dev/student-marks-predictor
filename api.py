@@ -121,8 +121,14 @@ def signup(user: User):
 
         return {"message": "Signup successful"}
     
+    except HTTPException:
+        raise
+    
     except Exception as e:
-        return {"error": str(e)}
+        print("LOGIN ERROR:", str(e))
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    
     
 @app.post("/login")
 def login(user: User):
