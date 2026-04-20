@@ -104,9 +104,8 @@ def signup(user: User):
         if existing_user:
             return {"error": "User already exists"}
         
-        # Truncate password to 72 bytes for bcrypt
-        password_bytes = user.password.encode('utf-8')[:72]
-        hashed_password = pwd_context.hash(password_bytes)
+        
+        hashed_password = pwd_context.hash(user.password)
 
         users_collection.insert_one({
             "username": user.username,
