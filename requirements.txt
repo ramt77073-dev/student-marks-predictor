@@ -1,9 +1,9 @@
 fastapi
 uvicorn
+pymongo
+python-dotenv
+pandas
 scikit-learn
 joblib
-pandas
-pymongo
 python-jose
-passlib[bcrypt]==1.7.4
-bcrypt==4.0.1
+passlib[bcrypt]
