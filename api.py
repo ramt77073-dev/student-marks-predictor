@@ -4,6 +4,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import joblib
 import pandas as pd
+from sklearn.linear_model import LinearRegression
 from database import users_collection, predictions_collection
 from passlib.context import CryptContext
 from jose import jwt, JWTError
@@ -28,7 +29,31 @@ app.add_middleware(
 )
 
 BASE_DIR = Path(__file__).resolve().parent
-model = joblib.load(BASE_DIR / "marks_model.joblib")
+
+# Try to load existing model, if fails, train a new one
+try:
+    model = joblib.load(BASE_DIR / "marks_model.joblib")
+except Exception as e:
+    print(f"Failed to load model: {e}. Training new model...")
+    
+    # Training data
+    data = {
+        "hours": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        "marks": [20, 30, 40, 50, 60, 70, 80, 90, 95, 100]
+    }
+    df = pd.DataFrame(data)
+    X = df[["hours"]]
+    y = df["marks"]
+    
+    model = LinearRegression()
+    model.fit(X, y)
+    
+    # Save the model
+    try:
+        joblib.dump(model, BASE_DIR / "marks_model.joblib")
+        print("New model trained and saved successfully")
+    except Exception as save_error:
+        print(f"Could not save model: {save_error}")
 
 SECRET_KEY = "RAMTEJA123"
 ALGORITHM = "HS256"
