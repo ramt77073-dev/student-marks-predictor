@@ -79,9 +79,10 @@ def signup(user: User):
         if existing_user:
             return {"error": "User already exists"}
         
-        # Truncate password to 72 bytes for bcrypt
-        password_str = user.password[:72] if len(user.password) > 72 else user.password
-        hashed_password = pwd_context.hash(password_str)
+        # Truncate password to 72 bytes (not characters) for bcrypt
+        password_bytes = user.password.encode('utf-8')[:72]
+        password_truncated = password_bytes.decode('utf-8', errors='ignore')
+        hashed_password = pwd_context.hash(password_truncated)
 
         users_collection.insert_one({
             "username": user.username,
@@ -91,6 +92,7 @@ def signup(user: User):
         return {"message": "Signup successful"}
     
     except Exception as e:
+        print(f"Signup error: {e}")
         return {"error": str(e)}
     
 @app.post("/login")
@@ -108,10 +110,11 @@ def login(user: User):
         if not str(stored_password).startswith("$2"):
             return {"error": "Old user record found. Please signup again"}
         
-        # Truncate password to 72 characters
-        password_str = user.password[:72] if len(user.password) > 72 else user.password
+        # Truncate password to 72 bytes (not characters) for bcrypt
+        password_bytes = user.password.encode('utf-8')[:72]
+        password_truncated = password_bytes.decode('utf-8', errors='ignore')
         
-        if not pwd_context.verify(password_str, found_user["password"]):
+        if not pwd_context.verify(password_truncated, found_user["password"]):
             return {"error": "Invalid password"}
         
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -127,6 +130,7 @@ def login(user: User):
             "username": user.username
         }
     except Exception as e:
+        print(f"Login error: {e}")
         return {"error": str(e)}
     
 @app.post("/predict")
