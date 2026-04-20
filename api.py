@@ -67,6 +67,13 @@ security = HTTPBearer()
 class User(BaseModel):
     username: str
     password: str
+    
+    def get_truncated_password(self):
+        """Truncate password to 72 bytes for bcrypt compatibility"""
+        password_bytes = self.password.encode('utf-8')
+        if len(password_bytes) > 72:
+            return password_bytes[:72].decode('utf-8', errors='ignore')
+        return self.password
 
 class StudentInput(BaseModel):
     hours: float
@@ -98,19 +105,15 @@ def serve_frontend():
 
 @app.post("/signup")
 def signup(user: User):
-
-    print("USERNAME =", user.username)
-    print("PASSWORD =", user.password)
-    print("PASSWORD LENGTH =", len(user.password))
-    print("PASSWORD TYPE =", type(user.password))
     try:
         existing_user = users_collection.find_one({"username": user.username})
 
         if existing_user:
             return {"error": "User already exists"}
         
-        
-        hashed_password = pwd_context.hash(user.password)
+        # Truncate password to 72 bytes for bcrypt
+        password = user.get_truncated_password()
+        hashed_password = pwd_context.hash(password)
 
         users_collection.insert_one({
             "username": user.username,
@@ -137,7 +140,9 @@ def login(user: User):
         if not str(stored_password).startswith("$2"):
             return {"error": "Old user record found. Please signup again"}
         
-        if not pwd_context.verify(user.password, found_user["password"]):
+        # Truncate password to 72 bytes for bcrypt
+        password = user.get_truncated_password()
+        if not pwd_context.verify(password, found_user["password"]):
             return {"error": "Invalid password"}
         
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
