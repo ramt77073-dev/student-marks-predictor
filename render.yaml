@@ -2,5 +2,6 @@ services:
   - type: web
     name: student-marks-api
     env: python
+    runtime: python-3.11
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT

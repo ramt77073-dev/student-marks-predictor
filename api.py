@@ -48,7 +48,7 @@ class StudentInput(BaseModel):
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_MINUTES))
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -59,7 +59,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     )
 
     try:
-        payload = jwt.decode(token, SECRET_KRY, algorithms=[ALGORITHMS])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
         if username is None:
             raise credentials_exception
@@ -110,7 +110,7 @@ def login(user: User):
         stored_password = found_user["password"]
 
         if not str(stored_password).startswith("$2"):
-            return {"error": "Old user record found. PLeade signup again"}
+            return {"error": "Old user record found. Please signup again"}
         
         if not pwd_context.verify(user.password, found_user["password"]):
             return {"error": "Invalid password"}
