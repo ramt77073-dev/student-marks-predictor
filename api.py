@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import joblib
 import pandas as pd
 from database import users_collection, predictions_collection
@@ -34,7 +34,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__max_rounds=12, bcrypt__ident="2b")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 security = HTTPBearer()
@@ -42,6 +42,13 @@ security = HTTPBearer()
 class User(BaseModel):
     username: str
     password: str
+    
+    @field_validator('password')
+    @classmethod
+    def truncate_password(cls, v):
+        # Truncate to 72 bytes for bcrypt compatibility
+        password_bytes = v.encode('utf-8')[:72]
+        return password_bytes.decode('utf-8', errors='ignore')
 
 class StudentInput(BaseModel):
     hours: float
