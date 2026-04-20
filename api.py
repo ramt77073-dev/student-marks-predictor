@@ -128,38 +128,11 @@ def signup(user: User):
         print("SIGNUP ERROR:", str(e))
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    
-@app.post("/login")
-def login(user: User):
-    try:
-        password = user.password[:72]
-
-        found_user = users_collection.find_one({"username": user.username})
-        if not found_user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        if not pwd_context.verify(password, found_user["password"]):
-            raise HTTPException(status_code=401, detail="Incorrect password")
-
-        access_token = create_access_token(data={"sub": user.username})
-
-        return {
-            "message": "Login successful",
-            "access_token": access_token,
-            "token_type": "bearer",
-            "username": user.username
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print("LOGIN ERROR:", str(e))
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/signup")
 def signup(user: User):
     try:
-        password = user.password[:72]
+        password = user.password[:72]   # 🔥 TRUNCATE FIRST
 
         existing_user = users_collection.find_one({"username": user.username})
         if existing_user:
@@ -174,11 +147,32 @@ def signup(user: User):
 
         return {"message": "Signup successful"}
 
-    except HTTPException:
-        raise
     except Exception as e:
-        print("SIGNUP ERROR:", str(e))
-        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+    @app.post("/login")
+def login(user: User):
+    try:
+        password = user.password[:72]   # 🔥 SAME HERE
+
+        found_user = users_collection.find_one({"username": user.username})
+
+        if not found_user:
+            raise HTTPException(status_code=400, detail="User not found")
+
+        if not pwd_context.verify(password, found_user["password"]):
+            raise HTTPException(status_code=400, detail="Incorrect password")
+
+        access_token = create_access_token(data={"sub": user.username})
+
+        return {
+            "message": "Login successful",
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/predict")
