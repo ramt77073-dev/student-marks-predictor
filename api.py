@@ -1,17 +1,20 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import joblib
 import pandas as pd
+from database import users_collection, predictions_collection
 from passlib.context import CryptContext
 from jose import jwt, JWTError
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 from fastapi.responses import FileResponse
-import os
-import warnings
+from fastapi.staticfiles import StaticFiles
+from datetime import datetime
+from fastapi.security import OAuth2PasswordBearer
 
+import warnings
 warnings.filterwarnings("ignore")
 
 app = FastAPI()
@@ -25,30 +28,16 @@ app.add_middleware(
 )
 
 BASE_DIR = Path(__file__).resolve().parent
+model = joblib.load(BASE_DIR / "marks_model.joblib")
 
-try:
-    from database import users_collection, predictions_collection
-    DB_AVAILABLE = True
-except Exception as e:
-    print(f"Database connection failed: {e}")
-    DB_AVAILABLE = False
-    users_collection = None
-    predictions_collection = None
-
-try:
-    model = joblib.load(BASE_DIR / "marks_model.joblib")
-    MODEL_AVAILABLE = True
-except Exception as e:
-    print(f"Model loading failed: {e}")
-    MODEL_AVAILABLE = False
-    model = None
-
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-key-change-in-production")
+SECRET_KEY = "RAMTEJA123"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+security = HTTPBearer()
 
 class User(BaseModel):
     username: str
@@ -57,16 +46,9 @@ class User(BaseModel):
 class StudentInput(BaseModel):
     hours: float
 
-def truncate_password(password: str) -> str:
-    """Truncate password to 72 bytes for bcrypt compatibility"""
-    pwd_bytes = password.encode('utf-8')
-    if len(pwd_bytes) > 72:
-        pwd_bytes = pwd_bytes[:72]
-    return pwd_bytes.decode('utf-8', errors='ignore')
-
-def create_access_token(data: dict, expires_delta: timedelta = None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -75,8 +57,9 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate token"
     )
+
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KRY, algorithms=[ALGORITHMS])
         username = payload.get("sub")
         if username is None:
             raise credentials_exception
@@ -88,26 +71,21 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 def serve_frontend():
     return FileResponse(BASE_DIR / "index.html")
 
-@app.get("/health")
-def health_check():
-    return {
-        "status": "ok",
-        "database": DB_AVAILABLE,
-        "model": MODEL_AVAILABLE
-    }
-
 @app.post("/signup")
 def signup(user: User):
-    if not DB_AVAILABLE:
-        return {"error": "Database not available"}
-    
+
+    print("USERNAME =", user.username)
+    print("PASSWORD =", user.password)
+    print("PASSWORD LENGTH =", len(user.password))
+    print("PASSWORD TYPE =", type(user.password))
     try:
         existing_user = users_collection.find_one({"username": user.username})
+
         if existing_user:
             return {"error": "User already exists"}
         
-        safe_password = truncate_password(user.password)
-        hashed_password = pwd_context.hash(safe_password)
+        
+        hashed_password = pwd_context.hash(user.password)
 
         users_collection.insert_one({
             "username": user.username,
@@ -115,23 +93,26 @@ def signup(user: User):
         })
 
         return {"message": "Signup successful"}
+    
     except Exception as e:
-        print(f"Signup error: {e}")
         return {"error": str(e)}
-
+    
 @app.post("/login")
 def login(user: User):
-    if not DB_AVAILABLE:
-        return {"error": "Database not available"}
-    
     try:
-        found_user = users_collection.find_one({"username": user.username})
+        users = list(users_collection.find({"username": user.username}))
+
+        found_user = users[-1] if users else None
+
         if not found_user:
             return {"error": "User not found"}
         
-        safe_password = truncate_password(user.password)
+        stored_password = found_user["password"]
+
+        if not str(stored_password).startswith("$2"):
+            return {"error": "Old user record found. PLeade signup again"}
         
-        if not pwd_context.verify(safe_password, found_user["password"]):
+        if not pwd_context.verify(user.password, found_user["password"]):
             return {"error": "Invalid password"}
         
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -147,38 +128,31 @@ def login(user: User):
             "username": user.username
         }
     except Exception as e:
-        print(f"Login error: {e}")
         return {"error": str(e)}
-
+    
 @app.post("/predict")
 def predict(data: StudentInput, current_user: str = Depends(get_current_user)):
-    if not MODEL_AVAILABLE:
-        return {"error": "Model not available"}
-    
     try:
         hours = data.hours
         prediction = model.predict(pd.DataFrame({"hours": [hours]}))
         predicted_marks = round(float(prediction[0]), 2)
 
-        if DB_AVAILABLE:
-            predictions_collection.insert_one({
-                "username": current_user,
-                "hours": hours,
-                "predicted_marks": predicted_marks
-            })
+        predictions_collection.insert_one({
+            "username": current_user,
+            "hours": hours,
+            "predicted_marks": predicted_marks
+        })
         
         return {
             "study_hours": hours,
             "predicted_marks": predicted_marks
         }
+    
     except Exception as e:
         return {"error": str(e)}
-
+    
 @app.get("/history/{username}")
 def get_history(username: str, current_user: str = Depends(get_current_user)):
-    if not DB_AVAILABLE:
-        return {"error": "Database not available"}
-    
     try:
         if username != current_user:
             raise HTTPException(status_code=403, detail="Not authorized")
@@ -193,9 +167,6 @@ def get_history(username: str, current_user: str = Depends(get_current_user)):
 
 @app.delete("/history/{username}")
 def clear_history(username: str, current_user: str = Depends(get_current_user)):
-    if not DB_AVAILABLE:
-        return {"error": "Database not available"}
-    
     try:
         if username != current_user:
             raise HTTPException(status_code=403, detail="Not authorized")
@@ -204,3 +175,4 @@ def clear_history(username: str, current_user: str = Depends(get_current_user)):
         return {"message": "History cleared"}
     except Exception as e:
         return {"error": str(e)}
+    
