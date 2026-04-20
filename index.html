@@ -336,10 +336,7 @@
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({
-                        username: username,
-                        password: password
-                    })
+                    body: JSON.stringif({ username, password })
                 });
 
                 const data = await res.json();
@@ -367,9 +364,6 @@
                 const username = document.querySelector("#username").value.trim();
                 const password = document.querySelector("#password").value.trim();
 
-                alert("username = " + username);
-                alert("password length = " + password.length);
-                console.log("password value:", password);
 
                 if (!username || !password) {
                     alert("Enter username and password");
