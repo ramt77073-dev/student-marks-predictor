@@ -115,7 +115,7 @@
                 margin-top: 24px;
                 color: #4b5563;
                 font-size: 15px;
-        }
+            }
             
             #historyList {
                 padding: 0;
@@ -177,7 +177,7 @@
                 <h3>Login</h3>
                 <input type="text" id="username" class="input-box" placeholder="Username">
                 <input type="password" id="password" class="input-box" placeholder="Password">
-                <button onClick="loginUser()" class="predict-btn">Login</button>
+                <button onclick="loginUser()" class="predict-btn">Login</button>
                 <button onclick="signup()" class="predict-btn">Signup</button>
             </div>
            
@@ -331,9 +331,6 @@
                 const username = document.getElementById("username").value.trim();
                 const password = document.getElementById("password").value.trim();
 
-                console.log("login password =", password);
-                console.log("login password length =", password.length);
-
                 if (!username || !password) {
                     alert("Enter username and password");
                     return;
@@ -374,10 +371,6 @@
                 const username = document.querySelector("#username").value.trim();
                 const password = document.querySelector("#password").value.trim();
 
-                console.log("signup password =", password);
-                console.log("signup password length =", password.length);
-
-
                 if (!username || !password) {
                     alert("Enter username and password");
                     return;
@@ -387,7 +380,7 @@
                     const res = await fetch("/signup", {
                         method: "POST",
                         headers: {
-                            "content-type": "application/json"
+                            "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
                             username: username,
@@ -396,17 +389,14 @@
                     });
                     const data = await res.json();
                     if (data.message === "Signup successful") {
-
                         alert("Signup successful!");
-                  } else {
-                         alert(data.error || "Signup failed");
-                }
-                    
+                    } else {
+                        alert(data.error || "Signup failed");
+                    }
                 } catch (error) {
                     console.error("Signup error:", error);
                     alert("Signup request failed");
                 }
-                
             }
 
             async function loadHistory() {
@@ -428,7 +418,7 @@
 
                     if (!res.ok) {
                         console.log("History fetch failed:", res.status);
-                        return
+                        return;
                     }
                     const data = await res.json();
                     console.log("history response =", data);
@@ -446,7 +436,6 @@
                     showHistory(historyData);
                 } catch (err) {
                     console.log("error loading history:", err);
-
                 }
             }
 
