@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from fastapi.security import OAuth2PasswordBearer
+import traceback
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -99,8 +100,11 @@ def serve_frontend():
 @app.post("/signup")
 def signup(user: User):
     try:
-        if len(user.password.encode("utf-8")) > 72:
-            raise HTTPException(status_code=400, detail="Password too long")
+        print("SIGNUP HIT")
+        print("USERNAME:", repr(user.username))
+        print("PASSWORD:", repr(user.password))
+        print("PASSWORD LENGTH:", len(user.password))
+
         existing_user = users_collection.find_one({"username": user.username})
 
         if existing_user:
@@ -108,6 +112,7 @@ def signup(user: User):
         
         
         hashed_password = pwd_context.hash(user.password)
+        print("HASH CREATED")
 
         users_collection.insert_one({
             "username": user.username,
@@ -122,13 +127,20 @@ def signup(user: User):
 @app.post("/login")
 def login(user: User):
     try:
-        if len(user.password.encode("utf-8")) > 72:
-            raise HTTPException(status_code=400, detail="Password too long")
+
+        print("LOGIN HIT")
+        print("USERNAME:", repr(user.username))
+        print("PASSWORD:", repr(user.password))
+        print("PASSWORD LENGTH:", len(user.password.encode("utf-8")))
         
         found_user = users_collection.find_one({"username": user.username})
+        print("FOUND USER:", found_user)
 
         if not found_user:
             raise HTTPException(status_code=401, detail="User not found")
+        
+        ok = pwd_context.verify(user.password, found_user["password"])
+        print("PASSWORD VERIFY RESULT:", ok)
         
         if not pwd_context.verify(user.password, found_user["password"]):
             raise HTTPException(status_code=401, detail="Incorrect password")
@@ -148,11 +160,11 @@ def login(user: User):
         }
 
     except HTTPException:
-
         raise
 
     except Exception as e:
-
+        print("LOGIN ERROR:", str(e))
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/predict")
