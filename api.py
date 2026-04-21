@@ -125,8 +125,6 @@ def signup(user: User):
     except HTTPException:
         raise
     except Exception as e:
-        print("SIGNUP ERROR:", str(e))
-        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
