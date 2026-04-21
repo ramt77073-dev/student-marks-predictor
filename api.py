@@ -131,17 +131,25 @@ def signup(user: User):
 @app.post("/login")
 def login(user: User):
     try:
-        password = user.password[:72]   # 🔥 SAME HERE
+        password = user.password[:72]
 
         found_user = users_collection.find_one({"username": user.username})
 
         if not found_user:
             raise HTTPException(status_code=400, detail="User not found")
 
-            stored_password = found_user.get("password")
+        stored_password = found_user.get("password")
 
+        if not stored_password:
+            raise HTTPException(status_code=400, detail="Password missing in DB")
 
-        if not pwd_context.verify(password, found_user["password"]):
+        # 🔥 SAFE VERIFY
+        try:
+            valid = pwd_context.verify(password, stored_password)
+        except Exception:
+            raise HTTPException(status_code=500, detail="Invalid password format in DB")
+
+        if not valid:
             raise HTTPException(status_code=400, detail="Incorrect password")
 
         access_token = create_access_token(data={"sub": user.username})
@@ -152,9 +160,8 @@ def login(user: User):
             "token_type": "bearer"
         }
 
-    except Exception:
+    except HTTPException:
         raise
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
