@@ -113,7 +113,7 @@ def signup(user: User):
         password = user.password[:72]
 
         hashed_password = pwd_context.hash(password)
-        pwd_context.verify(password, found_user["password"])
+       
 
         users_collection.insert_one({
             "username": user.username,
@@ -143,7 +143,7 @@ def login(user: User):
         if not stored_password:
             raise HTTPException(status_code=400, detail="Password missing in DB")
 
-        # 🔥 SAFE VERIFY
+    
         try:
             valid = pwd_context.verify(password, stored_password)
         except Exception:
