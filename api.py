@@ -12,9 +12,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from datetime import datetime
 from fastapi.security import OAuth2PasswordBearer
 import traceback
+import os
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -31,7 +31,6 @@ app.add_middleware(
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# Try to load existing model, if fails, train a new one
 try:
     model = joblib.load(BASE_DIR / "marks_model.joblib")
 except Exception as e:
@@ -56,7 +55,7 @@ except Exception as e:
     except Exception as save_error:
         print(f"Could not save model: {save_error}")
 
-SECRET_KEY = "RAMTEJA123"
+SECRET_KEY = os.getenv("SECRET_KEY", "RAMTEJA123")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -113,7 +112,6 @@ def signup(user: User):
         password = user.password[:72]
 
         hashed_password = pwd_context.hash(password)
-       
 
         users_collection.insert_one({
             "username": user.username,
@@ -139,6 +137,8 @@ def login(user: User):
             raise HTTPException(status_code=400, detail="User not found")
 
         stored_password = found_user.get("password")
+
+        valid = pwd_context.verify(password, stored_password)
 
         if not stored_password:
             raise HTTPException(status_code=400, detail="Password missing in DB")
@@ -182,9 +182,11 @@ def predict(data: StudentInput, current_user: str = Depends(get_current_user)):
             "study_hours": hours,
             "predicted_marks": predicted_marks
         }
-    
+
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
     
 @app.get("/history/{username}")
 def get_history(username: str, current_user: str = Depends(get_current_user)):
@@ -197,8 +199,11 @@ def get_history(username: str, current_user: str = Depends(get_current_user)):
             {"_id": 0}
         ))
         return {"history": data}
+    except HTTPException:
+        raise
+
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/history/{username}")
 def clear_history(username: str, current_user: str = Depends(get_current_user)):
@@ -208,6 +213,9 @@ def clear_history(username: str, current_user: str = Depends(get_current_user)):
         
         predictions_collection.delete_many({"username": username})
         return {"message": "History cleared"}
+    except HTTPException:
+        raise
+
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
     
