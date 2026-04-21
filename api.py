@@ -113,8 +113,8 @@ def signup(user: User):
         password = user.password[:72]
 
         hashed_password = pwd_context.hash(password)
-        print("HASH CREATED")
-
+        pwd_context.verify(password, found_user["password"])
+        
         users_collection.insert_one({
             "username": user.username,
             "password": hashed_password
