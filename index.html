@@ -341,8 +341,16 @@
                         username: username,
                         password: password })
                 });
+n
+                let data;
+                const text = await res.text();
 
-                const data = await res.json();
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    alert(text || "Login failed");
+                    return;
+                }
 
                 if (data.access_token) {
                     localStorage.setItem("token", data.access_token);
@@ -383,12 +391,17 @@
                             password: password
                         })
                     });
-                    const data = await res.json();
-                    if (data.message === "Signup successful") {
-                        alert("Signup successful!");
-                    } else {
-                        alert(data.error || data.error || "Signup failed");
+                    
+                    let data;
+                    const text = await res.text();
+
+                    try {
+                        data = JSON.parse(text);
+                    } catch {
+                        alert(text || "signup failed");
+                        return;
                     }
+                    
                 } catch (error) {
                     console.error("Signup error:", error);
                     alert("Signup request failed");

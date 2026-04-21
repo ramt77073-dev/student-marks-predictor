@@ -138,6 +138,9 @@ def login(user: User):
         if not found_user:
             raise HTTPException(status_code=400, detail="User not found")
 
+            stored_password = found_user.get("password")
+
+
         if not pwd_context.verify(password, found_user["password"]):
             raise HTTPException(status_code=400, detail="Incorrect password")
 
