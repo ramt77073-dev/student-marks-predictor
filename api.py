@@ -114,7 +114,7 @@ def signup(user: User):
 
         hashed_password = pwd_context.hash(password)
         pwd_context.verify(password, found_user["password"])
-        
+
         users_collection.insert_one({
             "username": user.username,
             "password": hashed_password
@@ -127,27 +127,6 @@ def signup(user: User):
     except Exception as e:
         print("SIGNUP ERROR:", str(e))
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/signup")
-def signup(user: User):
-    try:
-        password = user.password[:72]   # 🔥 TRUNCATE FIRST
-
-        existing_user = users_collection.find_one({"username": user.username})
-        if existing_user:
-            raise HTTPException(status_code=400, detail="User already exists")
-
-        hashed_password = pwd_context.hash(password)
-
-        users_collection.insert_one({
-            "username": user.username,
-            "password": hashed_password
-        })
-
-        return {"message": "Signup successful"}
-
-    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -171,6 +150,9 @@ def login(user: User):
             "access_token": access_token,
             "token_type": "bearer"
         }
+
+    except Exception:
+        raise
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
