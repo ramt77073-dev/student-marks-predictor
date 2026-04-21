@@ -341,7 +341,7 @@
                         username: username,
                         password: password })
                 });
-n
+
                 let data;
                 const text = await res.text();
 
@@ -401,7 +401,7 @@ n
                         alert(text || "signup failed");
                         return;
                     }
-                    
+
                 } catch (error) {
                     console.error("Signup error:", error);
                     alert("Signup request failed");
